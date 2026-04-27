@@ -24,7 +24,7 @@ def get_current_user(token: str, db: Session):
         payload = jwt.decode(token, SECRET, algorithms=["HS256"])
         user = db.query(User).filter(User.id == payload["id"]).first()
         return user
-    except:
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 

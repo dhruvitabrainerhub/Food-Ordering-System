@@ -1,11 +1,10 @@
-from typing import List, Optional
+from typing import List
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
 from models import MenuItem, Restaurant
-from routers.auth import get_current_user
 from schemas import MenuItemOut, RestaurantOut
 
 router = APIRouter(tags=["users"])
@@ -13,14 +12,14 @@ router = APIRouter(tags=["users"])
 
 @router.get("/restaurants", response_model=List[RestaurantOut])
 def get_restaurants(db: Session = Depends(get_db)):
-    return db.query(Restaurant).filter(Restaurant.is_active == True).all()
+    return db.query(Restaurant).filter(Restaurant.is_active.is_(True)).all()
 
 
 @router.get("/restaurants/{restaurant_id}/menu", response_model=List[MenuItemOut])
 def get_menu(restaurant_id: int, db: Session = Depends(get_db)):
     return (
         db.query(MenuItem)
-        .filter(MenuItem.restaurant_id == restaurant_id, MenuItem.is_available == True)
+        .filter(MenuItem.restaurant_id == restaurant_id, MenuItem.is_available.is_(True))
         .all()
     )
 
