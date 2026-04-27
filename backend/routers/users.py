@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
-from sqlalchemy.orm import Session
-from database import get_db
-from models import Restaurant, MenuItem
-from schemas import RestaurantOut, MenuItemOut
-from routers.auth import get_current_user
 from typing import List, Optional
+
+from fastapi import APIRouter, Depends, Header, HTTPException
+from sqlalchemy.orm import Session
+
+from database import get_db
+from models import MenuItem, Restaurant
+from routers.auth import get_current_user
+from schemas import MenuItemOut, RestaurantOut
 
 router = APIRouter(tags=["users"])
 

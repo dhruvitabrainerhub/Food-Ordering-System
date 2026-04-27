@@ -1,11 +1,13 @@
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
+from jose import jwt
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+
 from database import get_db
 from models import User
 from schemas import UserCreate, UserLogin, UserOut
-from passlib.context import CryptContext
-from jose import jwt
-from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 pwd = CryptContext(schemes=["bcrypt"])

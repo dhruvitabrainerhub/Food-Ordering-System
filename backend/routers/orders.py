@@ -1,11 +1,13 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
+
 from database import get_db
 from models import Order, OrderItem
-from schemas import OrderCreate, OrderOut
 from routers.auth import get_current_user
-from typing import List
+from schemas import OrderCreate, OrderOut
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 security = HTTPBearer()

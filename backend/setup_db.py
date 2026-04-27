@@ -1,8 +1,9 @@
 """Run this once to create admin user and sample data"""
 
-from database import SessionLocal, engine
-import models
 from passlib.context import CryptContext
+
+import models
+from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 db = SessionLocal()
