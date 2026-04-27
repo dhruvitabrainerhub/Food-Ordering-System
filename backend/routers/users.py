@@ -19,7 +19,9 @@ def get_restaurants(db: Session = Depends(get_db)):
 def get_menu(restaurant_id: int, db: Session = Depends(get_db)):
     return (
         db.query(MenuItem)
-        .filter(MenuItem.restaurant_id == restaurant_id, MenuItem.is_available.is_(True))
+        .filter(
+            MenuItem.restaurant_id == restaurant_id, MenuItem.is_available.is_(True)
+        )
         .all()
     )
 
