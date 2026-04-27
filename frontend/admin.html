@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - FoodExpress</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<div class="admin-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">🍔 Admin Panel</div>
+        <a href="#" class="active" onclick="showSection('dashboard')">📊 Dashboard</a>
+        <a href="#" onclick="showSection('restaurants')">🏪 Restaurants</a>
+        <a href="#" onclick="showSection('menu')">🍽️ Menu Items</a>
+        <a href="#" onclick="showSection('orders')">📦 Orders</a>
+        <a href="#" onclick="showSection('users')">👥 Users</a>
+        <a href="/" style="margin-top:auto">🏠 View Site</a>
+        <a href="#" onclick="logout()" style="color:#fc8019">🚪 Logout</a>
+    </div>
+
+    <!-- Content -->
+    <div class="admin-content">
+        <div id="alert"></div>
+
+        <!-- Dashboard -->
+        <div id="section-dashboard">
+            <h2 style="margin-bottom:24px">Dashboard</h2>
+            <div class="stats-grid" id="stats"></div>
+        </div>
+
+        <!-- Restaurants -->
+        <div id="section-restaurants" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                <h2>Restaurants</h2>
+                <button class="btn btn-primary" onclick="openModal('restaurant-modal')">+ Add Restaurant</button>
+            </div>
+            <table>
+                <thead><tr><th>Name</th><th>Cuisine</th><th>Rating</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="restaurants-table"></tbody>
+            </table>
+        </div>
+
+        <!-- Menu -->
+        <div id="section-menu" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                <h2>Menu Items</h2>
+                <button class="btn btn-primary" onclick="openModal('menu-modal')">+ Add Item</button>
+            </div>
+            <div style="margin-bottom:16px">
+                <select id="menu-filter" onchange="loadMenuItems()" style="padding:8px 12px;border-radius:8px;border:1px solid #ddd">
+                    <option value="">All Restaurants</option>
+                </select>
+            </div>
+            <table>
+                <thead><tr><th>Name</th><th>Restaurant</th><th>Category</th><th>Price</th><th>Actions</th></tr></thead>
+                <tbody id="menu-table"></tbody>
+            </table>
+        </div>
+
+        <!-- Orders -->
+        <div id="section-orders" style="display:none">
+            <h2 style="margin-bottom:20px">All Orders</h2>
+            <table>
+                <thead><tr><th>ID</th><th>User</th><th>Amount</th><th>Status</th><th>Date</th><th>Update</th></tr></thead>
+                <tbody id="orders-table"></tbody>
+            </table>
+        </div>
+
+        <!-- Users -->
+        <div id="section-users" style="display:none">
+            <h2 style="margin-bottom:20px">Users</h2>
+            <table>
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Joined</th></tr></thead>
+                <tbody id="users-table"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Restaurant Modal -->
+<div class="modal-overlay" id="restaurant-modal">
+    <div class="modal">
+        <h3>Add Restaurant</h3>
+        <div class="form-group"><label>Name</label><input id="r-name" placeholder="Restaurant name"></div>
+        <div class="form-group"><label>Description</label><textarea id="r-desc" placeholder="Description"></textarea></div>
+        <div class="form-group"><label>Cuisine</label><input id="r-cuisine" placeholder="e.g. Indian, Chinese"></div>
+        <div class="form-group"><label>Delivery Time</label><input id="r-time" placeholder="e.g. 30-40 mins"></div>
+        <div class="form-group"><label>Image URL</label><input id="r-image" placeholder="https://..."></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn btn-outline" onclick="closeModal('restaurant-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="addRestaurant()">Add</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Menu Item Modal -->
+<div class="modal-overlay" id="menu-modal">
+    <div class="modal">
+        <h3>Add Menu Item</h3>
+        <div class="form-group"><label>Restaurant</label><select id="m-restaurant"></select></div>
+        <div class="form-group"><label>Name</label><input id="m-name" placeholder="Item name"></div>
+        <div class="form-group"><label>Description</label><textarea id="m-desc" placeholder="Description"></textarea></div>
+        <div class="form-group"><label>Category</label><input id="m-category" placeholder="e.g. Starters, Main Course"></div>
+        <div class="form-group"><label>Price (₹)</label><input id="m-price" type="number" placeholder="0.00"></div>
+        <div class="form-group"><label>Image URL</label><input id="m-image" placeholder="https://..."></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn btn-outline" onclick="closeModal('menu-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="addMenuItem()">Add</button>
+        </div>
+    </div>
+</div>
+
+<script src="static/app.js"></script>
+<script>
+checkAuth(true);
+let restaurants = [];
+
+function showSection(name) {
+    document.querySelectorAll('[id^="section-"]').forEach(el => el.style.display = "none");
+    document.getElementById(`section-${name}`).style.display = "block";
+    document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+    if (name === "dashboard") loadStats();
+    if (name === "restaurants") loadRestaurants();
+    if (name === "menu") loadMenuItems();
+    if (name === "orders") loadOrders();
+    if (name === "users") loadUsers();
+}
+
+function showAlert(msg, type = "success") {
+    document.getElementById("alert").innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    setTimeout(() => document.getElementById("alert").innerHTML = "", 3000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+async function loadStats() {
+    const s = await apiFetch("/admin/stats");
+    document.getElementById("stats").innerHTML = `
+        <div class="stat-card"><div class="number">${s.total_users}</div><div class="label">Total Users</div></div>
+        <div class="stat-card"><div class="number">${s.total_restaurants}</div><div class="label">Restaurants</div></div>
+        <div class="stat-card"><div class="number">${s.total_orders}</div><div class="label">Total Orders</div></div>
+        <div class="stat-card"><div class="number">${s.pending_orders}</div><div class="label">Pending Orders</div></div>
+    `;
+}
+
+async function loadRestaurants() {
+    restaurants = await apiFetch("/admin/restaurants");
+    document.getElementById("restaurants-table").innerHTML = restaurants.map(r => `
+        <tr>
+            <td><strong>${r.name}</strong></td>
+            <td>${r.cuisine}</td>
+            <td>⭐ ${r.rating}</td>
+            <td><span class="status-badge ${r.is_active ? 'status-delivered' : 'status-cancelled'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
+            <td>
+                <button class="btn btn-outline" style="padding:4px 12px;font-size:0.85rem" onclick="toggleRestaurant(${r.id})">Toggle</button>
+                <button class="btn btn-danger" style="padding:4px 12px;font-size:0.85rem;margin-left:6px" onclick="deleteRestaurant(${r.id})">Delete</button>
+            </td>
+        </tr>
+    `).join("");
+    // Populate restaurant dropdowns
+    const opts = restaurants.map(r => `<option value="${r.id}">${r.name}</option>`).join("");
+    document.getElementById("m-restaurant").innerHTML = opts;
+    const filter = document.getElementById("menu-filter");
+    filter.innerHTML = `<option value="">All Restaurants</option>` + opts;
+}
+
+async function addRestaurant() {
+    try {
+        await apiFetch("/admin/restaurants", {
+            method: "POST",
+            body: {
+                name: document.getElementById("r-name").value,
+                description: document.getElementById("r-desc").value,
+                cuisine: document.getElementById("r-cuisine").value,
+                delivery_time: document.getElementById("r-time").value,
+                image: document.getElementById("r-image").value
+            }
+        });
+        closeModal("restaurant-modal");
+        showAlert("Restaurant added!");
+        loadRestaurants();
+    } catch(e) { showAlert(e.message, "error"); }
+}
+
+async function toggleRestaurant(id) {
+    await apiFetch(`/admin/restaurants/${id}/toggle`, { method: "PUT" });
+    loadRestaurants();
+}
+
+async function deleteRestaurant(id) {
+    if (!confirm("Delete this restaurant?")) return;
+    await apiFetch(`/admin/restaurants/${id}`, { method: "DELETE" });
+    showAlert("Restaurant deleted!");
+    loadRestaurants();
+}
+
+async function loadMenuItems() {
+    await loadRestaurants();
+    const rid = document.getElementById("menu-filter")?.value;
+    const url = rid ? `/restaurants/${rid}/menu` : "/admin/restaurants";
+    let items = [];
+    if (rid) {
+        items = await apiFetch(`/restaurants/${rid}/menu`);
+    } else {
+        // Load all items from all restaurants
+        const allItems = await Promise.all(restaurants.map(r => apiFetch(`/restaurants/${r.id}/menu`)));
+        items = allItems.flat();
+    }
+    document.getElementById("menu-table").innerHTML = items.map(item => `
+        <tr>
+            <td><strong>${item.name}</strong></td>
+            <td>${restaurants.find(r => r.id === item.restaurant_id)?.name || item.restaurant_id}</td>
+            <td>${item.category}</td>
+            <td>₹${item.price}</td>
+            <td><button class="btn btn-danger" style="padding:4px 12px;font-size:0.85rem" onclick="deleteMenuItem(${item.id})">Delete</button></td>
+        </tr>
+    `).join("");
+}
+
+async function addMenuItem() {
+    try {
+        await apiFetch("/admin/menu", {
+            method: "POST",
+            body: {
+                restaurant_id: parseInt(document.getElementById("m-restaurant").value),
+                name: document.getElementById("m-name").value,
+                description: document.getElementById("m-desc").value,
+                category: document.getElementById("m-category").value,
+                price: parseFloat(document.getElementById("m-price").value),
+                image: document.getElementById("m-image").value
+            }
+        });
+        closeModal("menu-modal");
+        showAlert("Menu item added!");
+        loadMenuItems();
+    } catch(e) { showAlert(e.message, "error"); }
+}
+
+async function deleteMenuItem(id) {
+    if (!confirm("Delete this item?")) return;
+    await apiFetch(`/admin/menu/${id}`, { method: "DELETE" });
+    showAlert("Item deleted!");
+    loadMenuItems();
+}
+
+async function loadOrders() {
+    const orders = await apiFetch("/admin/orders");
+    document.getElementById("orders-table").innerHTML = orders.map(o => `
+        <tr>
+            <td>#${o.id}</td>
+            <td>User #${o.user_id}</td>
+            <td>₹${o.total_amount}</td>
+            <td><span class="status-badge status-${o.status}">${o.status}</span></td>
+            <td>${new Date(o.created_at).toLocaleDateString()}</td>
+            <td>
+                <select onchange="updateOrderStatus(${o.id}, this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid #ddd">
+                    ${["pending","confirmed","preparing","delivered","cancelled"].map(s =>
+                        `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`
+                    ).join("")}
+                </select>
+            </td>
+        </tr>
+    `).join("");
+}
+
+async function updateOrderStatus(id, status) {
+    await apiFetch(`/admin/orders/${id}/status?status=${status}`, { method: "PUT" });
+    showAlert("Status updated!");
+}
+
+async function loadUsers() {
+    const users = await apiFetch("/admin/users");
+    document.getElementById("users-table").innerHTML = users.map(u => `
+        <tr>
+            <td><strong>${u.name}</strong></td>
+            <td>${u.email}</td>
+            <td>${u.phone}</td>
+            <td><span class="status-badge ${u.is_admin ? 'status-confirmed' : 'status-delivered'}">${u.is_admin ? 'Admin' : 'User'}</span></td>
+            <td>${new Date(u.created_at).toLocaleDateString()}</td>
+        </tr>
+    `).join("");
+}
+
+loadStats();
+</script>
+</body>
+</html>

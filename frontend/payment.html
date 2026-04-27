@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - FoodExpress</title>
+    <link rel="stylesheet" href="static/style.css">
+    <style>
+        .payment-wrapper {
+            min-height: 100vh;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .payment-box {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+        }
+        .payment-header {
+            background: linear-gradient(135deg, #fc8019, #ff6b35);
+            padding: 28px;
+            color: white;
+            text-align: center;
+        }
+        .payment-header h2 { font-size: 1.4rem; margin-bottom: 4px; }
+        .payment-amount { font-size: 2.4rem; font-weight: 800; margin-top: 10px; }
+        .payment-body { padding: 28px; }
+        .order-summary {
+            background: #fef9f5;
+            border: 1px solid #fde8d0;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .order-summary h4 { color: #fc8019; margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .order-row { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 4px 0; color: #555; }
+        .order-row.total { font-weight: 700; color: #333; border-top: 1px solid #fde8d0; margin-top: 8px; padding-top: 10px; font-size: 1rem; }
+        .address-box {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        .address-box span { font-weight: 600; color: #333; display: block; margin-bottom: 4px; }
+        #pay-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #fc8019, #ff6b35);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: opacity 0.2s;
+        }
+        #pay-btn:hover { opacity: 0.9; }
+        #pay-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .spinner {
+            width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .secure-badge {
+            display: flex; align-items: center; justify-content: center;
+            gap: 6px; margin-top: 16px; color: #999; font-size: 0.82rem;
+        }
+        /* Success & Cancel screens */
+        .result-screen {
+            text-align: center;
+            padding: 50px 28px;
+            display: none;
+        }
+        .result-icon { font-size: 4rem; margin-bottom: 16px; }
+        .result-screen h3 { font-size: 1.4rem; margin-bottom: 8px; }
+        .result-screen p { color: #666; margin-bottom: 24px; }
+    </style>
+</head>
+<body>
+<nav>
+    <a href="/" class="logo">🍔 FoodExpress</a>
+    <div class="nav-links"><a href="/cart">← Back to Cart</a></div>
+</nav>
+
+<div class="payment-wrapper">
+    <div class="payment-box">
+
+        <!-- Payment Form -->
+        <div id="payment-section">
+            <div class="payment-header">
+                <h2>Complete Your Order</h2>
+                <p>You will be redirected to Stripe</p>
+                <div class="payment-amount">₹<span id="header-amount">0</span></div>
+            </div>
+            <div class="payment-body">
+                <div class="order-summary">
+                    <h4>Order Summary</h4>
+                    <div id="summary-items"></div>
+                    <div class="order-row" style="margin-top:6px">
+                        <span>Delivery Fee</span><span>FREE</span>
+                    </div>
+                    <div class="order-row total">
+                        <span>Total</span><span>₹<span id="summary-total">0</span></span>
+                    </div>
+                </div>
+
+                <div class="address-box">
+                    <span>📍 Delivery Address</span>
+                    <div id="address-display"></div>
+                </div>
+
+                <div id="alert"></div>
+
+                <button id="pay-btn" onclick="handlePayment()">
+                    <span id="btn-text">🔒 Pay with Stripe</span>
+                    <div class="spinner" id="spinner"></div>
+                </button>
+
+                <div class="secure-badge">
+                    🔒 Powered by Stripe &nbsp;|&nbsp; 256-bit SSL Encryption
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Screen -->
+        <div class="result-screen" id="success-screen">
+            <div class="result-icon">🎉</div>
+            <h3 style="color:#38a169">Payment Successful!</h3>
+            <p>Your order has been confirmed.<br>Get ready for delicious food!</p>
+            <button class="btn btn-primary" style="width:100%;padding:14px" onclick="window.location.href='/orders'">
+                Track My Order →
+            </button>
+            <br><br>
+            <a href="/" style="color:#999;font-size:0.9rem">Back to Home</a>
+        </div>
+
+        <!-- Cancel Screen -->
+        <div class="result-screen" id="cancel-screen">
+            <div class="result-icon">😕</div>
+            <h3 style="color:#e53e3e">Payment Cancelled</h3>
+            <p>Your payment was not completed.<br>Your order has been cancelled.</p>
+            <button class="btn btn-primary" style="width:100%;padding:14px" onclick="window.location.href='/cart'">
+                Try Again
+            </button>
+            <br><br>
+            <a href="/" style="color:#999;font-size:0.9rem">Back to Home</a>
+        </div>
+
+    </div>
+</div>
+
+<script src="static/app.js"></script>
+<script>
+checkAuth();
+
+const params = new URLSearchParams(location.search);
+const deliveryAddress = decodeURIComponent(params.get("address") || localStorage.getItem("pending_address") || "");
+const sessionId = params.get("session_id");
+const orderId = params.get("order_id");
+const cancelled = params.get("cancelled");
+
+// Handle return from Stripe
+if (sessionId && orderId) {
+    document.getElementById("payment-section").style.display = "none";
+    document.getElementById("success-screen").style.display = "block";
+    // Update order status to confirmed directly
+    apiFetch(`/orders/${orderId}/confirm`, { method: "PUT" }).catch(() => {});
+    localStorage.removeItem("cart");
+    localStorage.removeItem("pending_address");
+    cart = [];
+} else if (cancelled) {
+    document.getElementById("payment-section").style.display = "none";
+    document.getElementById("cancel-screen").style.display = "block";
+} else {
+    // Normal payment page load
+    if (!cart.length || !deliveryAddress) {
+        window.location.href = "cart.html";
+    }
+
+    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    document.getElementById("header-amount").textContent = total.toFixed(2);
+    document.getElementById("summary-total").textContent = total.toFixed(2);
+    document.getElementById("address-display").textContent = deliveryAddress;
+    document.getElementById("summary-items").innerHTML = cart.map(i =>
+        `<div class="order-row"><span>${i.name} x${i.qty}</span><span>₹${(i.price * i.qty).toFixed(2)}</span></div>`
+    ).join("");
+}
+
+async function handlePayment() {
+    const btn = document.getElementById("pay-btn");
+    const spinner = document.getElementById("spinner");
+    const btnText = document.getElementById("btn-text");
+
+    btn.disabled = true;
+    spinner.style.display = "block";
+    btnText.style.display = "none";
+
+    try {
+        const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+        const baseUrl = window.location.origin;
+
+        // Step 1: Place order
+        const order = await apiFetch("/orders/", {
+            method: "POST",
+            body: {
+                restaurant_id: cart[0].restaurant_id,
+                address: deliveryAddress,
+                total_amount: total,
+                items: cart.map(i => ({ menu_item_id: i.id, quantity: i.qty, price: i.price }))
+            }
+        });
+
+        // Step 2: Create Stripe Checkout Session
+        const { checkout_url } = await apiFetch("/payment/create-checkout", {
+            method: "POST",
+            body: {
+                order_id: order.id,
+                amount: total,
+                success_url: baseUrl + "/payment",
+                cancel_url: baseUrl + "/payment?cancelled=true"
+            }
+        });
+
+        // Step 3: Redirect to Stripe hosted checkout page
+        window.location.href = checkout_url;
+
+    } catch(e) {
+        document.getElementById("alert").innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+        btn.disabled = false;
+        spinner.style.display = "none";
+        btnText.style.display = "block";
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodExpress - Order Food Online</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<nav>
+    <a href="index.html" class="logo">🍔 FoodExpress</a>
+    <div class="nav-links">
+        <a href="/orders">My Orders</a>
+        <span id="auth-link"></span>
+        <span class="cart-icon" onclick="toggleCart()">🛒 <span id="cart-badge">0</span></span>
+    </div>
+</nav>
+
+<div class="hero">
+    <h1>Hungry? We've got you covered!</h1>
+    <p>Order from the best restaurants near you</p>
+    <div class="search-bar">
+        <input type="text" id="search" placeholder="Search restaurants or cuisines..." oninput="filterRestaurants()">
+        <button onclick="filterRestaurants()">Search</button>
+    </div>
+</div>
+
+<div class="container">
+    <p class="section-title">All Restaurants</p>
+    <div class="grid" id="restaurants-grid"></div>
+</div>
+
+<!-- Cart Sidebar -->
+<div class="cart-sidebar" id="cart-sidebar">
+    <div class="cart-header">
+        <h3>Your Cart</h3>
+        <button onclick="toggleCart()" style="background:none;border:none;font-size:1.5rem;cursor:pointer">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-footer">
+        <div class="cart-total">Total: ₹<span id="cart-total">0</span></div>
+        <button class="btn btn-primary" style="width:100%" onclick="window.location.href='/cart'">Proceed to Checkout</button>
+    </div>
+</div>
+
+<script src="static/app.js"></script>
+<script>
+let allRestaurants = [];
+
+async function loadRestaurants() {
+    try {
+        allRestaurants = await apiFetch("/restaurants");
+        renderRestaurants(allRestaurants);
+    } catch(e) { console.error(e); }
+}
+
+function renderRestaurants(list) {
+    const grid = document.getElementById("restaurants-grid");
+    if (!list.length) { grid.innerHTML = "<p>No restaurants found.</p>"; return; }
+    grid.innerHTML = list.map(r => `
+        <a href="/menu?id=${r.id}" class="card">
+            <img src="${r.image || 'https://via.placeholder.com/300x180?text=Restaurant'}" alt="${r.name}">
+            <div class="card-body">
+                <h3>${r.name}</h3>
+                <p>${r.cuisine} • ${r.description}</p>
+                <div class="card-meta">
+                    <span class="rating">⭐ ${r.rating}</span>
+                    <span class="delivery-time">🕐 ${r.delivery_time}</span>
+                </div>
+            </div>
+        </a>
+    `).join("");
+}
+
+function filterRestaurants() {
+    const q = document.getElementById("search").value.toLowerCase();
+    renderRestaurants(allRestaurants.filter(r =>
+        r.name.toLowerCase().includes(q) || r.cuisine.toLowerCase().includes(q)
+    ));
+}
+
+function toggleCart() {
+    document.getElementById("cart-sidebar").classList.toggle("open");
+    renderCartSidebar();
+}
+
+function renderCartSidebar() {
+    const items = document.getElementById("cart-items");
+    if (!cart.length) { items.innerHTML = "<p style='text-align:center;color:#999;margin-top:40px'>Cart is empty</p>"; return; }
+    items.innerHTML = cart.map((item, i) => `
+        <div class="cart-item">
+            <div>
+                <div style="font-weight:600">${item.name}</div>
+                <div style="color:#fc8019">₹${item.price}</div>
+            </div>
+            <div class="cart-item-controls">
+                <button class="qty-btn" onclick="changeQty(${i}, -1)">-</button>
+                <span>${item.qty}</span>
+                <button class="qty-btn" onclick="changeQty(${i}, 1)">+</button>
+            </div>
+        </div>
+    `).join("");
+    document.getElementById("cart-total").textContent = cart.reduce((s, i) => s + i.price * i.qty, 0).toFixed(2);
+}
+
+function changeQty(index, delta) {
+    cart[index].qty += delta;
+    if (cart[index].qty <= 0) cart.splice(index, 1);
+    saveCart();
+    updateCartBadge();
+    renderCartSidebar();
+}
+
+// Auth link
+const user = getUser();
+document.getElementById("auth-link").innerHTML = user
+    ? `<a href="#" onclick="logout()">Logout (${user.name})</a>${user.is_admin ? ' <a href="/admin">Admin</a>' : ''}`
+    : `<a href="/login">Login</a>`;
+
+updateCartBadge();
+loadRestaurants();
+</script>
+</body>
+</html>

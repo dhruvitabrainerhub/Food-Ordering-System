@@ -1,0 +1,24 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+exclude = '''
+/(
+    \.git
+  | __pycache__
+  | \.venv
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_third_party = ["fastapi", "sqlalchemy", "pydantic", "jose", "passlib", "stripe"]
+known_first_party = ["database", "models", "schemas", "routers"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+warn_unused_ignores = true
+warn_return_any = false
+exclude = ["tests/"]

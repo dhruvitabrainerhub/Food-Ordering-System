@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - FoodExpress</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<nav>
+    <a href="/" class="logo">🍔 FoodExpress</a>
+    <div class="nav-links">
+        <a href="/orders">My Orders</a>
+        <a href="/">Home</a>
+        <span class="cart-icon" onclick="toggleCart()">🛒 <span id="cart-badge">0</span></span>
+    </div>
+</nav>
+
+<div id="restaurant-header" style="background:white;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08)"></div>
+
+<div class="container" style="display:flex;gap:24px">
+    <div style="flex:1">
+        <div id="categories" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px"></div>
+        <div id="menu-list"></div>
+    </div>
+</div>
+
+<!-- Cart Sidebar -->
+<div class="cart-sidebar" id="cart-sidebar">
+    <div class="cart-header">
+        <h3>Your Cart</h3>
+        <button onclick="toggleCart()" style="background:none;border:none;font-size:1.5rem;cursor:pointer">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-footer">
+        <div class="cart-total">Total: ₹<span id="cart-total">0</span></div>
+        <button class="btn btn-primary" style="width:100%" onclick="window.location.href='/cart'">Checkout</button>
+    </div>
+</div>
+
+<script src="static/app.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const restaurantId = params.get("id");
+let menuItems = [];
+
+async function loadPage() {
+    const [restaurant, items] = await Promise.all([
+        apiFetch(`/restaurants/${restaurantId}`),
+        apiFetch(`/restaurants/${restaurantId}/menu`)
+    ]);
+    menuItems = items;
+
+    document.getElementById("restaurant-header").innerHTML = `
+        <div class="container" style="display:flex;align-items:center;gap:20px">
+            <img src="${restaurant.image || 'https://via.placeholder.com/100'}" style="width:80px;height:80px;border-radius:12px;object-fit:cover">
+            <div>
+                <h2>${restaurant.name}</h2>
+                <p style="color:#666">${restaurant.cuisine} • ⭐ ${restaurant.rating} • 🕐 ${restaurant.delivery_time}</p>
+                <p style="color:#888;font-size:0.9rem">${restaurant.description}</p>
+            </div>
+        </div>
+    `;
+
+    const cats = [...new Set(items.map(i => i.category))];
+    document.getElementById("categories").innerHTML = cats.map(c =>
+        `<button class="btn btn-outline" onclick="filterCategory('${c}')">${c}</button>`
+    ).join("") + `<button class="btn btn-outline" onclick="renderMenu(menuItems)">All</button>`;
+
+    renderMenu(items);
+}
+
+function renderMenu(items) {
+    document.getElementById("menu-list").innerHTML = items.map(item => `
+        <div class="menu-item">
+            <img src="${item.image || 'https://via.placeholder.com/80?text=Food'}" alt="${item.name}">
+            <div class="menu-info">
+                <h4>${item.name}</h4>
+                <p>${item.description}</p>
+                <span class="menu-price">₹${item.price}</span>
+            </div>
+            <div>
+                <button class="btn-add" onclick='addToCart(${JSON.stringify(item)})'>+ Add</button>
+            </div>
+        </div>
+    `).join("");
+}
+
+function filterCategory(cat) {
+    renderMenu(menuItems.filter(i => i.category === cat));
+}
+
+function toggleCart() {
+    document.getElementById("cart-sidebar").classList.toggle("open");
+    renderCartSidebar();
+}
+
+function renderCartSidebar() {
+    const items = document.getElementById("cart-items");
+    if (!cart.length) { items.innerHTML = "<p style='text-align:center;color:#999;margin-top:40px'>Cart is empty</p>"; return; }
+    items.innerHTML = cart.map((item, i) => `
+        <div class="cart-item">
+            <div><div style="font-weight:600">${item.name}</div><div style="color:#fc8019">₹${item.price}</div></div>
+            <div class="cart-item-controls">
+                <button class="qty-btn" onclick="changeQty(${i}, -1)">-</button>
+                <span>${item.qty}</span>
+                <button class="qty-btn" onclick="changeQty(${i}, 1)">+</button>
+            </div>
+        </div>
+    `).join("");
+    document.getElementById("cart-total").textContent = cart.reduce((s, i) => s + i.price * i.qty, 0).toFixed(2);
+}
+
+function changeQty(index, delta) {
+    cart[index].qty += delta;
+    if (cart[index].qty <= 0) cart.splice(index, 1);
+    saveCart(); updateCartBadge(); renderCartSidebar();
+}
+
+updateCartBadge();
+loadPage();
+</script>
+</body>
+</html>
