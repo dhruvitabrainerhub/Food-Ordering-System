@@ -11,9 +11,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 pwd = CryptContext(schemes=["bcrypt"])
 SECRET = "supersecretkey123"
 
+
 def create_token(data: dict):
     data["exp"] = datetime.utcnow() + timedelta(hours=24)
     return jwt.encode(data, SECRET, algorithm="HS256")
+
 
 def get_current_user(token: str, db: Session):
     try:
@@ -23,20 +25,24 @@ def get_current_user(token: str, db: Session):
     except:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     new_user = User(
-        name=user.name, email=user.email,
+        name=user.name,
+        email=user.email,
         password=pwd.hash(user.password),
-        phone=user.phone, address=user.address
+        phone=user.phone,
+        address=user.address,
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     token = create_token({"id": new_user.id, "is_admin": new_user.is_admin})
     return {"token": token, "user": UserOut.from_orm(new_user)}
+
 
 @router.post("/login")
 def login(data: UserLogin, db: Session = Depends(get_db)):

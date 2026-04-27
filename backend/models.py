@@ -1,7 +1,17 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, Text
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    Boolean,
+    ForeignKey,
+    DateTime,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -15,6 +25,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     orders = relationship("Order", back_populates="user")
 
+
 class Restaurant(Base):
     __tablename__ = "restaurants"
     id = Column(Integer, primary_key=True, index=True)
@@ -26,6 +37,7 @@ class Restaurant(Base):
     cuisine = Column(String)
     is_active = Column(Boolean, default=True)
     items = relationship("MenuItem", back_populates="restaurant")
+
 
 class MenuItem(Base):
     __tablename__ = "menu_items"
@@ -39,17 +51,21 @@ class MenuItem(Base):
     is_available = Column(Boolean, default=True)
     restaurant = relationship("Restaurant", back_populates="items")
 
+
 class Order(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     restaurant_id = Column(Integer, ForeignKey("restaurants.id"))
     total_amount = Column(Float)
-    status = Column(String, default="pending")  # pending, confirmed, preparing, delivered, cancelled
+    status = Column(
+        String, default="pending"
+    )  # pending, confirmed, preparing, delivered, cancelled
     address = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")
+
 
 class OrderItem(Base):
     __tablename__ = "order_items"
